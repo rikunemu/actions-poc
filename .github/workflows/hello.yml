@@ -1,13 +1,19 @@
 # ワークフロー名
-name: Hello
+name: Manual
 # イベント(プッシュ時に起動)
-on: push
+on: 
+  workflow_dispatch:
+    inputs:
+      greeting:
+        type: string
+        default: Hello
+        required: true
+        description: A cheerful word
 # ジョブの定義
 jobs:
   # ジョブID
-  hello:
+  run:
     # ランナー
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Hello, world"
-      - uses: actions/checkout@v4
+      - run: echo "${{ inputs.greeting }}"
