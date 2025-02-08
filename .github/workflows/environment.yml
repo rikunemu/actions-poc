@@ -1,0 +1,20 @@
+# ワークフロー名
+name: Environment variables
+# イベント(プッシュ時に起動)
+on: 
+  workflow_dispatch:
+# ジョブの定義
+jobs:
+  # ジョブID
+  run:
+    # ランナー
+    runs-on: ubuntu-latest
+    # 環境変数
+    env:
+      BRANCH: feature/workflow-base
+    steps:
+      - run: echo "${BRANCH}"
+      - uses: actions/checkout@v4
+        with:
+          # envコンテキスト経由でジョブレベルの環境変数を参照
+          ref: ${{ env.BRANCH }}
