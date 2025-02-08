@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     # 環境変数
     env:
-      BRANCH: feature/workflow-base
+      BRANCH: main
     steps:
       - run: echo "${BRANCH}"
       - uses: actions/checkout@v4
