@@ -147,16 +147,68 @@ class GrassChecker:
                 print("Discord通知の送信に失敗しました", file=sys.stderr)
                 return False
         else:
-            jst = timezone(timedelta(hours=9))
-            today = datetime.now(jst).strftime("%Y年%m月%d日")
-            message = f"🌱 {today}の草は生えています!明日もコミットしましょう!"
-            
             if self.send_discord_notification(message):
                 print("Discord通知を送信しました")
                 return True
             else:
                 print("Discord通知の送信に失敗しました", file=sys.stderr)
                 return False
+            
+    def get_weekly_contributions(self) -> Optional[int]:
+        """
+        Discordに週間の合計コントリビューション数を通知
+            
+        Returns:
+            週間の合計コントリビューション数、取得失敗時はNone
+        """
+        jst = timezone(timedelta(hours=9))
+        today = datetime.now(jst).date()
+        week_ago = today - timedelta(days=6)  # 今日含めて7日間
+
+        query = """
+        query($userName:String!, $from:DateTime!, $to:DateTime!) {
+            user(login: $userName) {
+                contributionsCollection(from: $from, to: $to) {
+                    contributionCalendar {
+                        totalContributions
+                    }
+                }
+            }
+        }
+        """
+
+        headers = {
+            "Authorization": f"Bearer {self.github_token}",
+            "Content-Type": "application/json",
+        }
+
+        variables = {
+            "userName": self.github_username,
+            "from": week_ago.isoformat(),
+            "to": today.isoformat()
+        }
+
+        try:
+            response = requests.post(
+                "https://api.github.com/graphql",
+                json={"query": query, "variables": variables},
+                headers=headers,
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            return data.get("data", {}).get("user", {}).get(
+                "contributionsCollection", {}
+            ).get("contributionCalendar", {}).get("totalContributions", 0)
+
+        except requests.exceptions.RequestException as e:
+            print(f"GitHub API エラー: {e}", file=sys.stderr)
+            return None
+        except (KeyError, TypeError) as e:
+            print(f"レスポンス解析エラー: {e}", file=sys.stderr)
+            return None
+
 
 def main():
     """メイン処理"""
@@ -185,6 +237,17 @@ def main():
     
     success = checker.check_and_notify()
     sys.exit(0 if success else 1)
+
+    jst = timezone(timedelta(hours=9))
+    today = datetime.now(jst)
+    weekday = today.weekday()  # 0=月曜, 6=日曜
+
+    if weekday == 5:  # 土曜日
+        weekly_total = checker.get_weekly_contributions()
+        if weekly_total is not None:
+            message = f"📊 今週の草合計は {weekly_total} 本です！お疲れさまでした！"
+            checker.send_discord_notification(message)
+
 
 
 if __name__ == "__main__":
