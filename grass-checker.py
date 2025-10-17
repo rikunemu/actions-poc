@@ -237,11 +237,11 @@ def main():
     today = datetime.now(jst)
     weekday = today.weekday()  # 0=月曜, 6=日曜
 
-    if weekday == 5:  # 土曜日
-        weekly_total = checker.get_weekly_contributions()
-        if weekly_total is not None:
-            message = f"📊 今週の草合計は {weekly_total} 本です！お疲れさまでした！"
-            checker.send_discord_notification(message)
+    # if weekday == 5:  # 土曜日
+    weekly_total = checker.get_weekly_contributions()
+    if weekly_total is not None:
+        message = f"📊 今週の草合計は {weekly_total} 本です！お疲れさまでした！"
+        checker.send_discord_notification(message)
 
 
 
