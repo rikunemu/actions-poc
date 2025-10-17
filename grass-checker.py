@@ -150,22 +150,22 @@ class GrassChecker:
         return True
             
     def get_weekly_contributions(self) -> Optional[int]:
-        """
-        Discordに週間の合計コントリビューション数を通知
-            
-        Returns:
-            週間の合計コントリビューション数、取得失敗時はNone
-        """
+        """過去7日間のGitHub Contributions合計を取得"""
         jst = timezone(timedelta(hours=9))
         today = datetime.now(jst).date()
-        week_ago = today - timedelta(days=6)  # 今日含めて7日間
+        week_ago = today - timedelta(days=6)
 
         query = """
-        query($userName:String!, $from:DateTime!, $to:DateTime!) {
+        query($userName:String!) {
             user(login: $userName) {
-                contributionsCollection(from: $from, to: $to) {
+                contributionsCollection {
                     contributionCalendar {
-                        totalContributions
+                        weeks {
+                            contributionDays {
+                                date
+                                contributionCount
+                            }
+                        }
                     }
                 }
             }
@@ -177,11 +177,7 @@ class GrassChecker:
             "Content-Type": "application/json",
         }
 
-        variables = {
-            "userName": self.github_username,
-            "from": week_ago.isoformat(),
-            "to": today.isoformat()
-        }
+        variables = {"userName": self.github_username}
 
         try:
             response = requests.post(
@@ -193,16 +189,28 @@ class GrassChecker:
             response.raise_for_status()
             data = response.json()
 
-            return data.get("data", {}).get("user", {}).get(
+            weeks = data.get("data", {}).get("user", {}).get(
                 "contributionsCollection", {}
-            ).get("contributionCalendar", {}).get("totalContributions", 0)
+            ).get("contributionCalendar", {}).get("weeks", [])
+
+            total = 0
+            for week in weeks:
+                for day in week.get("contributionDays", []):
+                    date_str = day.get("date")
+                    if date_str:
+                        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+                        if week_ago <= date_obj <= today:
+                            total += day.get("contributionCount", 0)
+
+            return total
 
         except requests.exceptions.RequestException as e:
             print(f"GitHub API エラー: {e}", file=sys.stderr)
             return None
-        except (KeyError, TypeError) as e:
+        except (KeyError, TypeError, ValueError) as e:
             print(f"レスポンス解析エラー: {e}", file=sys.stderr)
             return None
+
 
 
 def main():
