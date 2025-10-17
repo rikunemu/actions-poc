@@ -229,9 +229,6 @@ def main():
         discord_webhook_url=discord_webhook_url,
         discord_user_id=discord_user_id
     )
-    
-    success = checker.check_and_notify()
-    sys.exit(0 if success else 1)
 
     jst = timezone(timedelta(hours=9))
     today = datetime.now(jst)
@@ -242,7 +239,9 @@ def main():
     if weekly_total is not None:
         message = f"📊 今週の草合計は {weekly_total} 本です！お疲れさまでした！"
         checker.send_discord_notification(message)
-
+    
+    success = checker.check_and_notify()
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
