@@ -146,13 +146,8 @@ class GrassChecker:
             else:
                 print("Discord通知の送信に失敗しました", file=sys.stderr)
                 return False
-        else:
-            if self.send_discord_notification(message):
-                print("Discord通知を送信しました")
-                return True
-            else:
-                print("Discord通知の送信に失敗しました", file=sys.stderr)
-                return False
+            
+        return True
             
     def get_weekly_contributions(self) -> Optional[int]:
         """
